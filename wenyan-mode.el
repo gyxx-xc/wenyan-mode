@@ -1,4 +1,4 @@
-;;; wenyan.el --- Wenyan major mode
+;;; wenyan-mode.el --- Wenyan major mode
 
 ;; Copyright (C) 2001  Free Software Foundation, Inc.
 
@@ -25,6 +25,9 @@
 ;; Wenyan major mode
 
 ;;; Code:
+
+(defvar wenyan-indent-offset 4
+  "Indentation offset for `wenyan-mode'.")
 
 (defvar wenyan-mode-map
   (let ((map (make-sparse-keymap)))
@@ -243,7 +246,7 @@ like string or variable."
                                (*? anything)
                                )))
           (setq rtn (1- rtn)))
-      (* rtn tab-width))
+      (* rtn wenyan-indent-offset))
     ))
 
 (defun wenyan-calculate-indentation ()
@@ -258,5 +261,5 @@ like string or variable."
        0))))
 
 
-(provide 'wenyan)
-;;; wenyan.el ends here
+(provide 'wenyan-mode)
+;;; wenyan-mode.el ends here
