@@ -36,8 +36,8 @@
   (let ((st (make-syntax-table)))
     (modify-syntax-entry ?\u3001 ".") ;; 、
     (modify-syntax-entry ?\u3002 ".") ;; 。
-    (modify-syntax-entry ?\u300C "w") ;; 「
-    (modify-syntax-entry ?\u300D "w") ;; 」
+    (modify-syntax-entry ?\u300C "(w<\" 12") ;; 「
+    (modify-syntax-entry ?\u300D ")w>\" 34") ;; 」
     (modify-syntax-entry ?\u300E "\"") ;; 『
     (modify-syntax-entry ?\u300F "\"") ;; 』
     st)
@@ -57,7 +57,7 @@ It is almost not used since is designed for c-like language.")
   "List of string warp keywords.")
 
 (defvar wenyan-variable-name-list
-  '("名之曰" "中之")
+  '("曰" "中之")
   "List of variable name keywords.")
 
 (defvar wenyan-function-use-list
@@ -164,7 +164,7 @@ like string or variable."
 
 ;;;###autoload
 (define-derived-mode wenyan-mode prog-mode "Wenyan"
-  "A major mode for editing Wenyan files."
+  "A major mode for editing Wenyan codes."
   :syntax-table wenyan-mode-syntax-table
   (setq-local comment-start (regexp-opt '("批曰" "注曰" "疏曰") t))
   (setq-local comment-end "」」")
@@ -188,9 +188,75 @@ like string or variable."
         (save-excursion (indent-line-to indent))
       (indent-line-to indent))))
 
+(defun wenyan-backword-line-skip-blank ()
+  "Move to the previous line and skip blank lines."
+  (forward-line -1)
+  (while (and (not (bobp))
+              (looking-at-p "^[[:space:]]*$"))
+    (forward-line -1))
+  (not (bobp)))
+
+
+;; 是術曰 +1
+;; 是謂 IDENTIFIER 之術也 -1
+;; 其物如是 +1
+;; 是謂 IDENTIFIER 之物也 -1
+
+;; 若 if_expression 者 +1
+;; 若非 -1 +1
+
+;; 恆為是 +1
+;; 凡 xx 中之 xx +1
+;; 為是 xx 遍 +1
+;; 云云 | 也 -1
+;; I think there are some better way to do it...
+(defun wenyan-calculate-indentation-block-modifier (line)
+  "Return amount by which LINE modifies the indentation."
+  (save-excursion
+    (let ((rtn 0))
+      ;; in the perivous line now
+      (if (re-search-forward
+           (rx-to-string `(seq (or
+                                "若非"
+                                "是術曰"
+                                "恆為是"
+                                "其物如是"
+                                (seq "若" (*? anything) "者")
+                                (seq "凡" (*? anything) "中之" (*? anything))
+                                (seq "為是" (*? anything) "遍"))
+                               (*? ,(wenyan-punctuation-or-blank-rx))
+                               line-end
+                               ))
+           (line-end-position) t)
+          (setq rtn 1))
+      ;; in the current line now
+      (goto-char line)
+      (print rtn)
+      (if (looking-at-p
+           (rx-to-string `(seq (*? blank)
+                               (or
+                                (seq "是謂" (*? anything) "之物也")
+                                (seq "是謂" (*? anything) "之術也")
+                                "若非"
+                                "云云"
+                                "也")
+                               (*? anything)
+                               )))
+          (setq rtn (1- rtn)))
+      (* rtn tab-width))
+    ))
+
 (defun wenyan-calculate-indentation ()
   "Return the column to which the current line should be indented."
-  0)
+  (save-excursion
+    (let ((cur-line-begin-pos (line-beginning-position)))
+      (or
+       (when (wenyan-backword-line-skip-blank)
+         (let* ((modifier
+                 (wenyan-calculate-indentation-block-modifier cur-line-begin-pos)))
+           (+ (current-indentation) modifier)))
+       0))))
+
 
 (provide 'wenyan)
 ;;; wenyan.el ends here
