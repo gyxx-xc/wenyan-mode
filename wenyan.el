@@ -41,18 +41,64 @@
     (modify-syntax-entry ?\u300E "\"") ;; 『
     (modify-syntax-entry ?\u300F "\"") ;; 』
     st)
-  "Syntax table for `wenyan-mode'.")
+  "Syntax table for `wenyan-mode'.
+It is almost not used since is designed for c-like language.")
 
-;; type word 元|物|爻|術|言|列|數
-;; key word 乃行是術曰|若其不然者|乃止是遍|乃歸空無|欲行是術|若其然者|其物如是|乃得矣|恆為是|之術也|必先得|是術曰|之物也|云云|其餘|中之|為是|之長|乃止|若非|或若|乃得|是謂|者|若|遍|之|充|銜|凡|也
-;; operator 中有陽乎|所餘幾何|中無陰乎|不等於|不大於|不小於|等於|大於|小於|加|乘|除|變|以|於|減
-;; built in 不知何禍歟|不復存矣|如事不諧|姑妄行此|吾嘗觀|之禍歟|乃作罷|名之曰|書之|以施|之禍|嗚呼|之義|昔之|方悟|是矣|今有|吾有|之書|物之|夫|中|今|取|噫|曰|施|豈|有|蓋謂|或云
-;; number 負|·|又|零|〇|一|二|三|四|五|六|七|八|九|十|百|千|萬|億|兆|京|垓|秭|穰|溝|澗|正|載|極|分|釐|毫|絲|忽|微|纖|沙|塵|埃|渺|漠
-;; const 陰|陽|其
-;; string 『*』|「「*」」
-;; comment 批曰|注曰|疏曰
-;; punctuation 。|、
-;; variable & function 「*」
+(defvar wenyan-comment-start-list
+  '("注曰" "疏曰")
+  "List of comment start keywords.")
+
+(defvar wenyan-doc-comment-start-list
+  '("批曰")
+  "List of doc comment start keyword.")
+
+(defvar wenyan-string-warp-list
+  '('("「「" "」」") '("『" "』"))
+  "List of string warp keywords.")
+
+(defvar wenyan-variable-name-list
+  '("名之曰" "中之")
+  "List of variable name keywords.")
+
+(defvar wenyan-function-use-list
+  '("施")
+  "List of function call bagin keywords.")
+
+(defvar wenyan-variable-warp-list
+  '('("「" "」"))
+  "List of variable warp keywords.")
+
+(defvar wenyan-keyword-list
+  '("不知何禍歟" "不復存矣" "如事不諧" "姑妄行此" "吾嘗觀" "之禍歟" "乃作罷" "名之曰" "書之" "以施" "之禍" "嗚呼" "之義" "昔之" "方悟" "是矣" "今有" "吾有" "之書" "物之" "夫" "中" "今" "取" "噫" "曰" "施" "豈" "有" "蓋謂" "或云" "乃行是術曰" "若其不然者" "乃止是遍" "乃歸空無" "欲行是術" "若其然者" "其物如是" "乃得矣" "恆為是" "之術也" "必先得" "是術曰" "之物也" "云云" "其餘" "中之" "為是" "之長" "乃止" "若非" "或若" "乃得" "是謂" "者" "若" "遍" "之" "充" "銜" "凡" "也")
+  "List of keyword.")
+
+(defvar wenyan-operator-list
+  '("中有陽乎" "所餘幾何" "中無陰乎" "不等於" "不大於" "不小於" "等於" "大於" "小於" "加" "乘" "除" "變" "以" "於" "減")
+  "List of operator.")
+
+(defvar wenyan-const-list
+  '("陰" "陽" "其")
+  "List of const.")
+
+(defvar wenyan-type-list
+  '("元" "物" "爻" "術" "言" "列" "數")
+  "List of type word.")
+
+(defvar wenyan-number-list
+  '("負" "·" "又" "零" "〇" "一" "二" "三" "四" "五" "六" "七" "八" "九" "十" "百" "千" "萬" "億" "兆" "京" "垓" "秭" "穰" "溝" "澗" "正" "載" "極" "分" "釐" "毫" "絲" "忽" "微" "纖" "沙" "塵" "埃" "渺" "漠")
+  "List of number.")
+
+(defvar wenyan-punctuation-list
+  '("。" "、")
+  "List of punctuation.")
+
+(defun wenyan-var-select-rx ()
+  "Return a regexp that matches variable."
+  (rx-to-string (rx (or "1" "2"))))
+
+(rx (eval `(or ,@wenyan-variable-name-list))
+    (submatch (eval 'wenyan-var-select-rx)))
+
 (defvar wenyan-font-lock-keywords
   `(
     (,(rx
@@ -92,14 +138,14 @@
     (,(regexp-opt '("中有陽乎" "所餘幾何" "中無陰乎" "不等於" "不大於" "不小於" "等於" "大於" "小於" "加" "乘" "除" "變" "以" "於" "減") t)
      . 'font-lock-operator-face)
 
+    (,(regexp-opt '("負" "·" "又" "零" "〇" "一" "二" "三" "四" "五" "六" "七" "八" "九" "十" "百" "千" "萬" "億" "兆" "京" "垓" "秭" "穰" "溝" "澗" "正" "載" "極" "分" "釐" "毫" "絲" "忽" "微" "纖" "沙" "塵" "埃" "渺" "漠") t)
+     . 'font-lock-number-face)
+
     (,(rx (or "陰" "陽" "其"))
      . 'font-lock-constant-face)
 
     (,(regexp-opt '("元" "物" "爻" "術" "言" "列" "數") t)
      . 'font-lock-type-face)
-
-    (,(regexp-opt '("負" "·" "又" "零" "〇" "一" "二" "三" "四" "五" "六" "七" "八" "九" "十" "百" "千" "萬" "億" "兆" "京" "垓" "秭" "穰" "溝" "澗" "正" "載" "極" "分" "釐" "毫" "絲" "忽" "微" "纖" "沙" "塵" "埃" "渺" "漠") t)
-     . 'font-lock-number-face)
 
     (,(regexp-opt '("。" "、") t)
      . 'font-lock-punctuation-face)
