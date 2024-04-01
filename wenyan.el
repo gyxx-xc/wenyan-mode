@@ -53,7 +53,7 @@ It is almost not used since is designed for c-like language.")
   "List of doc comment start keyword.")
 
 (defvar wenyan-string-warp-list
-  '('("「「" "」」") '("『" "』"))
+  '(("「「" "」」") ("『" "』"))
   "List of string warp keywords.")
 
 (defvar wenyan-variable-name-list
@@ -65,7 +65,7 @@ It is almost not used since is designed for c-like language.")
   "List of function call bagin keywords.")
 
 (defvar wenyan-variable-warp-list
-  '('("「" "」"))
+  '(("「" "」"))
   "List of variable warp keywords.")
 
 (defvar wenyan-keyword-list
@@ -92,62 +92,66 @@ It is almost not used since is designed for c-like language.")
   '("。" "、")
   "List of punctuation.")
 
-(defun wenyan-var-select-rx ()
-  "Return a regexp that matches variable."
-  (rx-to-string (rx (or "1" "2"))))
+(defun wenyan-warp-select-rx (list)
+  "Return a regexp that matches things warp by LIST.
+like string or variable."
+  `(or ,@(mapcar (lambda (x)
+                   `(and ,(nth 0 x) (*? anything) ,(nth 1 x)))
+                 list)))
 
-(rx (eval `(or ,@wenyan-variable-name-list))
-    (submatch (eval 'wenyan-var-select-rx)))
+(defun wenyan-punctuation-or-blank-rx ()
+  "Return a regexp that matches mutiple punctuation or blank."
+  `(*? (or ,@wenyan-punctuation-list blank))
+  )
 
 (defvar wenyan-font-lock-keywords
   `(
-    (,(rx
-       (and (or "疏曰" "注曰") (?? "。") (*? blank)
-            (or (and "「「" (*? anything) "」」")
-                (and "『" (*? anything) "』"))))
+    (,(rx-to-string
+       `(and (or ,@wenyan-comment-start-list)
+             ,(wenyan-punctuation-or-blank-rx)
+             ,(wenyan-warp-select-rx wenyan-string-warp-list)))
      . 'font-lock-comment-face)
 
-    (,(rx
-       (and "批曰" (?? "。") (*? blank)
-            (or (and "「「" (*? anything) "」」")
-                (and "『" (*? anything) "』"))))
+    (,(rx-to-string
+       `(and (or ,@wenyan-doc-comment-start-list)
+             ,(wenyan-punctuation-or-blank-rx)
+             ,(wenyan-warp-select-rx wenyan-string-warp-list)))
      . 'font-lock-doc-face)
 
-    (,(rx
-       (or (and "「「" (*? anything) "」」")
-           (and "『" (*? anything) "』")))
+    (,(rx-to-string
+       (wenyan-warp-select-rx wenyan-string-warp-list))
      . 'font-lock-string-face)
 
-    (,(rx
-       (or "名之曰" "中之")
-       (submatch "「" (*? anything) "」"))
+    (,(rx-to-string
+       `(and (or ,@wenyan-variable-name-list)
+             (submatch ,(wenyan-warp-select-rx wenyan-variable-warp-list))))
      1 'font-lock-variable-name-face)
 
-    (,(rx "施"
-          (submatch "「" (*? anything) "」"))
+    (,(rx-to-string
+       `(and (or ,@wenyan-function-use-list)
+             (submatch ,(wenyan-warp-select-rx wenyan-variable-warp-list))))
      1 'font-lock-function-use-face
      )
 
-    (,(rx
-       (and "「" (*? anything) "」"))
+    (,(rx-to-string (wenyan-warp-select-rx wenyan-variable-warp-list))
      . 'font-lock-variable-use-face)
 
-    (,(regexp-opt '("不知何禍歟" "不復存矣" "如事不諧" "姑妄行此" "吾嘗觀" "之禍歟" "乃作罷" "名之曰" "書之" "以施" "之禍" "嗚呼" "之義" "昔之" "方悟" "是矣" "今有" "吾有" "之書" "物之" "夫" "中" "今" "取" "噫" "曰" "施" "豈" "有" "蓋謂" "或云" "乃行是術曰" "若其不然者" "乃止是遍" "乃歸空無" "欲行是術" "若其然者" "其物如是" "乃得矣" "恆為是" "之術也" "必先得" "是術曰" "之物也" "云云" "其餘" "中之" "為是" "之長" "乃止" "若非" "或若" "乃得" "是謂" "者" "若" "遍" "之" "充" "銜" "凡" "也") t)
+    (,(regexp-opt wenyan-keyword-list t)
      . 'font-lock-keyword-face)
 
-    (,(regexp-opt '("中有陽乎" "所餘幾何" "中無陰乎" "不等於" "不大於" "不小於" "等於" "大於" "小於" "加" "乘" "除" "變" "以" "於" "減") t)
+    (,(regexp-opt wenyan-operator-list t)
      . 'font-lock-operator-face)
 
-    (,(regexp-opt '("負" "·" "又" "零" "〇" "一" "二" "三" "四" "五" "六" "七" "八" "九" "十" "百" "千" "萬" "億" "兆" "京" "垓" "秭" "穰" "溝" "澗" "正" "載" "極" "分" "釐" "毫" "絲" "忽" "微" "纖" "沙" "塵" "埃" "渺" "漠") t)
+    (,(regexp-opt wenyan-number-list t)
      . 'font-lock-number-face)
 
-    (,(rx (or "陰" "陽" "其"))
+    (,(regexp-opt wenyan-const-list t)
      . 'font-lock-constant-face)
 
-    (,(regexp-opt '("元" "物" "爻" "術" "言" "列" "數") t)
+    (,(regexp-opt wenyan-type-list t)
      . 'font-lock-type-face)
 
-    (,(regexp-opt '("。" "、") t)
+    (,(regexp-opt wenyan-punctuation-list t)
      . 'font-lock-punctuation-face)
     )
   "Keyword highlighting specification for `wenyan-mode'.")
