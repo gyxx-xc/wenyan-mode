@@ -107,9 +107,16 @@ like string or variable."
   `(*? (or ,@wenyan-punctuation-list blank))
   )
 
-(defvar wenyan-font-lock-keywords
-  `(
-    (,(rx-to-string
+(defun wenyan-function-call-rx ()
+  "Return a regexp that matches function call."
+  `(and "有一術"
+        ,(wenyan-punctuation-or-blank-rx)
+        "名之曰"
+        (submatch ,(wenyan-warp-select-rx wenyan-variable-warp-list))
+        ))
+
+(defvar wenyan-font-lock-keywords-1
+  `((,(rx-to-string
        `(and (or ,@wenyan-comment-start-list)
              ,(wenyan-punctuation-or-blank-rx)
              ,(wenyan-warp-select-rx wenyan-string-warp-list)))
@@ -124,6 +131,15 @@ like string or variable."
     (,(rx-to-string
        (wenyan-warp-select-rx wenyan-string-warp-list))
      . 'font-lock-string-face)
+    )
+  "Keyword highlighting level 1 specification for `wenyan-mode'.
+This livel is used to highlight comments and strings.")
+
+(defvar wenyan-font-lock-keywords-2
+  `(,@wenyan-font-lock-keywords-1
+
+    (,(rx-to-string `(and ,(wenyan-function-call-rx)))
+     1 'font-lock-function-call-face)
 
     (,(rx-to-string
        `(and (or ,@wenyan-variable-name-list)
@@ -133,12 +149,16 @@ like string or variable."
     (,(rx-to-string
        `(and (or ,@wenyan-function-use-list)
              (submatch ,(wenyan-warp-select-rx wenyan-variable-warp-list))))
-     1 'font-lock-function-use-face
-     )
+     1 'font-lock-function-use-face)
 
     (,(rx-to-string (wenyan-warp-select-rx wenyan-variable-warp-list))
      . 'font-lock-variable-use-face)
+    )
+  "Keyword highlighting level 2 specification for `wenyan-mode'.
+This level is used to highlight variable and function name.")
 
+(defvar wenyan-font-lock-keywords
+  `(,@wenyan-font-lock-keywords-2
     (,(regexp-opt wenyan-keyword-list t)
      . 'font-lock-keyword-face)
 
@@ -158,26 +178,6 @@ like string or variable."
      . 'font-lock-punctuation-face)
     )
   "Keyword highlighting specification for `wenyan-mode'.")
-
-;; (defvar wenyan-imenu-generic-expression
-;;   ...)
-
-;; (defvar wenyan-outline-regexp
-;;   ...)
-
-;;;###autoload
-(define-derived-mode wenyan-mode prog-mode "Wenyan"
-  "A major mode for editing Wenyan codes."
-  :syntax-table wenyan-mode-syntax-table
-  (setq-local comment-start (regexp-opt '("批曰" "注曰" "疏曰") t))
-  (setq-local comment-end "」」")
-  (setq-local font-lock-defaults
-              '(wenyan-font-lock-keywords))
-  (setq-local indent-line-function 'wenyan-indent-line)
-  ;; (setq-local imenu-generic-expression
-  ;;             wenyan-imenu-generic-expression)
-  ;; (setq-local outline-regexp wenyan-outline-regexp)
-  )
 
 ;;; Indentation
 
@@ -259,6 +259,26 @@ like string or variable."
                  (wenyan-calculate-indentation-block-modifier cur-line-begin-pos)))
            (+ (current-indentation) modifier)))
        0))))
+
+;; (defvar wenyan-imenu-generic-expression
+;;   ...)
+
+;; (defvar wenyan-outline-regexp
+;;   ...)
+
+;;;###autoload
+(define-derived-mode wenyan-mode prog-mode "Wenyan"
+  "A major mode for editing Wenyan codes."
+  :syntax-table wenyan-mode-syntax-table
+  (setq-local comment-start (regexp-opt '("批曰" "注曰" "疏曰") t))
+  (setq-local comment-end "」」")
+  (setq-local font-lock-defaults
+              '(wenyan-font-lock-keywords))
+  (setq-local indent-line-function 'wenyan-indent-line)
+  ;; (setq-local imenu-generic-expression
+  ;;             wenyan-imenu-generic-expression)
+  ;; (setq-local outline-regexp wenyan-outline-regexp)
+  )
 
 
 (provide 'wenyan-mode)
